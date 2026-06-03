@@ -28,63 +28,87 @@ function startLevel(level) {
     gameState = "playing";
     overlay.classList.add("hidden");
     
-    // Sākam ar 1 Pepe
+    // Sākam ar 1 Pepe līmeņa sākumā
     pepes = [{ x: 200, y: 500, offsetX: 0, offsetY: 0 }];
     
-    // Aprēķinām, cik MrBeast būs šajā līmenī
-    let beastAmount = 20 + level * 20; 
+    let beastAmount = 15 + level * 15; 
     
-    // 1. ĢENERĒJAM VĀRTUS (Vairākas joslas, piemēram, 2 vai 3 joslas līmenī)
     gates = [];
-    let gateLines = 1 + Math.floor(level / 2); // Arvien vairāk vārtu joslu augstākos līmeņos
-    if (gateLines > 4) gateLines = 4; // Maksimums 4 vārtu rindas
+    let gateLines = 1 + Math.floor(level / 2); 
+    if (gateLines > 4) gateLines = 4; 
     
-    let currentRequired = beastAmount; // Sekojam līdzi, cik liela Pepe armija būs vajadzīga finālā
+    // Vārtu izmēri (Samazināti, lai var viegli aizsniegt un izmanevrēt)
+    let gateWidth = 110;
+    let gateHeight = 40;
     
     for (let line = 0; line < gateLines; line++) {
-        // Katra vārtu josla atrodas augstāk (mazāks Y)
         let gateY = 300 - (line * 250); 
         
-        // Uzģenerējam divus vārtu variantus
-        let valLeft, textLeft, valRight, textRight;
+        let valLeft, textLeft, typeLeft, colorLeft;
+        let valRight, textRight, typeRight, colorRight;
         
-        // Random izvēle vārtu tipam
-        if (Math.random() > 0.5) {
-            valLeft = 2 + Math.floor(Math.random() * 3); // x2, x3 vai x4
+        // --- KREISIE VĀRTI (Random izvēle starp labiem un sliktiem)
+        let randLeft = Math.random();
+        if (randLeft < 0.4) { // Pozitīvie reizinātāji
+            valLeft = 2 + Math.floor(Math.random() * 3);
             textLeft = "x" + valLeft;
-        } else {
-            valLeft = 10 + Math.floor(Math.random() * 30); // +10 līdz +40
+            typeLeft = "mult";
+            colorLeft = "#00ffcc"; // Zaļgans
+        } else if (randLeft < 0.7) { // Pozitīvie pieskaitītāji
+            valLeft = 5 + Math.floor(Math.random() * 15);
             textLeft = "+" + valLeft;
+            typeLeft = "add";
+            colorLeft = "#38b6ff"; // Zils
+        } else { // JAUNUMS: Negatīvie vārti (Atņemšana)
+            valLeft = 3 + Math.floor(Math.random() * 10);
+            textLeft = "-" + valLeft;
+            typeLeft = "sub";
+            colorLeft = "#ff3b3b"; // Sarkans
         }
         
-        // GARANTIJA: Lai vienmēr būtu iespējams uzvarēt, otri vārti nodrošinās lielu skaitu
-        // Ja šī ir pēdējā vārtu rinda pirms bosa, iedodam iespēju dabūt x999 vai tik, cik vajag
-        if (line === gateLines - 1 && Math.random() > 0.4) {
+        // --- LABIE VĀRTI (Ar garantiju, ka līmenis ir uzvarams)
+        let randRight = Math.random();
+        if (line === gateLines - 1 && Math.random() > 0.5) {
+            // Fināla vārtu garantija lielam pūlim (x999)
             valRight = 999;
             textRight = "x999";
-        } else {
-            valRight = 2 + Math.floor(Math.random() * 4);
+            typeRight = "mult";
+            colorRight = "#ff00ff"; // Violetais x999
+        } else if (randRight < 0.4) {
+            valRight = 2 + Math.floor(Math.random() * 3);
             textRight = "x" + valRight;
+            typeRight = "mult";
+            colorRight = "#00ffcc";
+        } else if (randRight < 0.7) {
+            valRight = 5 + Math.floor(Math.random() * 15);
+            textRight = "+" + valRight;
+            typeRight = "add";
+            colorRight = "#38b6ff";
+        } else { // JAUNUMS: Negatīvie vārti (Dalīšana)
+            valRight = 2;
+            textRight = "/2";
+            typeRight = "div";
+            colorRight = "#ff9900"; // Oranžs dalītājs
         }
         
-        // Nejauši samainām vietām kreisos un labos vārtus, lai nav vienveidīgi
+        // Nejauši samainām vietām, lai nav vienmēr labā puse labāka
         if (Math.random() > 0.5) {
-            gates.push({ x: 30, y: gateY, w: 150, h: 45, type: textLeft.includes('x') ? 'mult':'add', value: valLeft, text: textLeft, color: "#00ffcc", active: true });
-            gates.push({ x: 220, y: gateY, w: 150, h: 45, type: textRight.includes('x') ? 'mult':'add', value: valRight, text: textRight, color: "#ff00ff", active: true });
+            gates.push({ x: 50, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
+            gates.push({ x: 240, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
         } else {
-            gates.push({ x: 30, y: gateY, w: 150, h: 45, type: textRight.includes('x') ? 'mult':'add', value: valRight, text: textRight, color: "#ff00ff", active: true });
-            gates.push({ x: 220, y: gateY, w: 150, h: 45, type: textLeft.includes('x') ? 'mult':'add', value: valLeft, text: textLeft, color: "#00ffcc", active: true });
+            gates.push({ x: 50, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
+            gates.push({ x: 240, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
         }
     }
     
-    // 2. ĢENERĒJAM PREZIDENTS/MRBEAST (Tie stāv pašās beigās aiz visiem vārtiem)
+    // Ģenerējam MrBeast armiju pašā galā
     beasts = [];
     let furthestGateY = 300 - ((gateLines - 1) * 250);
-    let startBeastY = furthestGateY - 200; // Novietojam tālu virs pēdējiem vārtiem
+    let startBeastY = furthestGateY - 200; 
     
     for (let i = 0; i < beastAmount; i++) {
         beasts.push({
-            x: 100 + Math.random() * 200,
+            x: 80 + Math.random() * 240,
             y: startBeastY + (Math.random() - 0.5) * 80
         });
     }
@@ -93,29 +117,25 @@ function startLevel(level) {
 function update() {
     if (gameState !== "playing") return;
 
-    // Pārbaudām, vai esam sasnieguši MrBeast pūli
+    // Sienas loģika: Vai esam atdūrušies pret MrBeast pūli
     let combatMode = false;
     if (beasts.length > 0) {
-        // Ja pirmais MrBeast noslīdējis līdz cīņas zonai (Y ap 400-500)
         let lowestBeastY = Math.max(...beasts.map(b => b.y));
-        if (lowestBeastY >= 420) {
-            combatMode = true; // APSTĀDINĀM SKRIEŠANU UZ PRIEKŠU, nevar paiet garām!
+        if (lowestBeastY >= 430) {
+            combatMode = true; 
         }
     }
 
     let targetLeaderX = Math.max(20, Math.min(canvas.width - 20, mouseX));
 
-    // REĀLISTISKS PŪĻA IZKĀRTOJUMS (Dabiska apļa/fiksēta pūļa forma ar noise)
+    // Pūļa izkārtojums
     pepes.forEach((pepe, index) => {
         if (index === 0) {
             pepe.offsetX = 0;
             pepe.offsetY = 0;
         } else if (!pepe.offsetX) {
-            // Jaunam tēlam aprēķinām pastāvīgo vietu pūlī pēc zelta griezuma / spirāles metodes
-            let phi = index * 137.5 * (Math.PI / 180); // Zelta leņķis
-            let r = 7 * Math.sqrt(index); // Attālums no centra pieaug pakāpeniski
-            
-            // Pievienojam nelielu random reālismam, lai nav ideāli punkti
+            let phi = index * 137.5 * (Math.PI / 180); 
+            let r = 7 * Math.sqrt(index); 
             pepe.offsetX = r * Math.cos(phi) + (Math.random() - 0.5) * 4;
             pepe.offsetY = r * Math.sin(phi) + (Math.random() - 0.5) * 4;
         }
@@ -123,57 +143,60 @@ function update() {
         let targetX = targetLeaderX + pepe.offsetX;
         let targetY = 500 + pepe.offsetY;
 
-        // Kustības plūdenums
         pepe.x += (targetX - pepe.x) * 0.12;
         pepe.y += (targetY - pepe.y) * 0.12;
     });
 
-    // Kustība uz leju NOTIEK TIKAI TAD, ja neesam atdūrušies pret MrBeast sienu
+    // Kustība uz priekšu (Apstājas combat režīmā)
     if (!combatMode) {
-        let speed = 2.5 + (currentLevel * 0.15);
+        let speed = 2.5 + (currentLevel * 0.1);
         gates.forEach(gate => gate.y += speed);
         beasts.forEach(beast => beast.y += speed);
     } else {
-        // Combat režīmā, ja Pepe ir par tālu aizmugurē, tie nedaudz pastumjas uz priekšu cīņā
         beasts.forEach(beast => {
-            if (beast.y < 440) beast.y += 1; // lēnām spiež pūli uz leju
+            if (beast.y < 450) beast.y += 0.8; 
         });
     }
 
-    // Sadursme ar vārtiem
+    // Sadursme ar vārtiem (Gan pozitīvie, gan negatīvie)
     gates.forEach(gate => {
         if (gate.active && pepes.length > 0) {
-            // Pārbauda pret pūļa centru (pirmo tēlu)
             if (pepes[0].y < gate.y + gate.h && pepes[0].y > gate.y &&
                 pepes[0].x > gate.x && pepes[0].x < gate.x + gate.w) {
                 
-                gate.active = false;
+                gate.active = false; 
                 let currentCount = pepes.length;
-                let newCount = 0;
                 
                 if (gate.type === 'mult') {
-                    newCount = (currentCount * gate.value) - currentCount;
-                } else {
-                    newCount = gate.value;
-                }
-
-                let spawnLimit = Math.min(newCount, 400); 
-
-                for (let i = 0; i < spawnLimit; i++) {
-                    pepes.push({
-                        x: pepes[0].x + (Math.random() - 0.5) * 20,
-                        y: pepes[0].y + (Math.random() - 0.5) * 20
-                    });
+                    // Reizināšana
+                    let newCount = (currentCount * gate.value) - currentCount;
+                    let spawnLimit = Math.min(newCount, 400); 
+                    for (let i = 0; i < spawnLimit; i++) {
+                        pepes.push({ x: pepes[0].x + (Math.random() - 0.5) * 20, y: pepes[0].y + (Math.random() - 0.5) * 20 });
+                    }
+                } else if (gate.type === 'add') {
+                    // Pieskaitīšana
+                    for (let i = 0; i < gate.value; i++) {
+                        pepes.push({ x: pepes[0].x + (Math.random() - 0.5) * 20, y: pepes[0].y + (Math.random() - 0.5) * 20 });
+                    }
+                } else if (gate.type === 'sub') {
+                    // JAUNUMS: Atņemšana (-)
+                    let removeCount = Math.min(gate.value, pepes.length);
+                    pepes.splice(pepes.length - removeCount, removeCount);
+                } else if (gate.type === 'div') {
+                    // JAUNUMS: Dalīšana (/)
+                    let removeCount = Math.floor(pepes.length / gate.value);
+                    pepes.splice(pepes.length - removeCount, removeCount);
                 }
             }
         }
     });
 
-    // CĪŅA (Sadursmes starp Pepe un MrBeast)
+    // Cīņa ar MrBeast
     for (let i = pepes.length - 1; i >= 0; i--) {
         for (let j = beasts.length - 1; j >= 0; j--) {
             let dist = Math.hypot(pepes[i].x - beasts[j].x, pepes[i].y - beasts[j].y);
-            if (dist < 15) { 
+            if (dist < 14) { 
                 pepes.splice(i, 1);
                 beasts.splice(j, 1);
                 break; 
@@ -184,7 +207,7 @@ function update() {
     pepeCountEl.innerText = pepes.length;
     beastCountEl.innerText = beasts.length;
 
-    // Spēles beigu nosacījumi
+    // Zaudējums
     if (pepes.length === 0) {
         gameState = "gameover";
         overlayText.innerText = "Zaudēji līmenī " + currentLevel + "!";
@@ -195,7 +218,7 @@ function update() {
         btn.onclick = () => { currentLevel = 1; startLevel(currentLevel); };
         overlay.classList.remove("hidden");
     } 
-    // Uzvara ir TIKAI TAD, kad Visi MrBeast ir miruši
+    // Uzvara
     else if (beasts.length === 0) { 
         gameState = "win";
         currentLevel++;
@@ -213,7 +236,7 @@ function update() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Līmeņa fona teksts
+    // Līmeņa fons
     ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
     ctx.font = "bold 80px Arial";
     ctx.textAlign = "center";
@@ -232,7 +255,7 @@ function draw() {
         }
     });
 
-    // Zīmējam MrBeast (Sarkanie apļi)
+    // Zīmējam MrBeast (Sarkanie)
     beasts.forEach(beast => {
         ctx.beginPath();
         ctx.arc(beast.x, beast.y, 9, 0, Math.PI * 2);
@@ -241,7 +264,7 @@ function draw() {
         ctx.closePath();
     });
 
-    // Zīmējam Pepe (Zilie apļi - tagad smukā pūlī)
+    // Zīmējam Pepe (Zilie)
     pepes.forEach(pepe => {
         ctx.beginPath();
         ctx.arc(pepe.x, pepe.y, 8, 0, Math.PI * 2);
