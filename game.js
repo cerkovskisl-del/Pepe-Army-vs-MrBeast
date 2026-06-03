@@ -96,15 +96,14 @@ function startLevel(level) {
         }
     }
     
-    // UZLABOJUMS: MrBeast pūlis tagad tiek uzģenerēts kā skaists, dabisks apļa mākonis (nevis līnija)
+    // IZMAIŅA: MrBeast pūlis tagad sākumā ir novietots TUvĀK pēdējiem vārtiem (pavirzīts uz leju)
     beasts = [];
     let furthestGateY = 300 - ((gateLines - 1) * 250);
-    let bossZoneCenterY = furthestGateY - 250; // Centrs, ap kuru grupēsies pretinieki
+    let bossZoneCenterY = furthestGateY - 120; // Samazināts no -250 uz -120, lai būtu zemāk
     
     for (let i = 0; i < beastAmount; i++) {
-        // Izmantojam to pašu organisko spirāles metodi arī pretiniekiem, lai tie veidotu pūli
         let phi = i * 137.5 * (Math.PI / 180);
-        let r = 8 * Math.sqrt(i);
+        let r = 8 Math.sqrt(i);
         
         beasts.push({
             x: 200 + r * Math.cos(phi) + (Math.random() - 0.5) * 5,
@@ -116,15 +115,14 @@ function startLevel(level) {
 function update() {
     if (gameState !== "playing") return;
 
-    // UZLABOJUMS: Pārbaudām, vai abu pūļu centri ir pietiekami tuvu, lai sāktos kauja
+    // IZMAIŅA: Cīņas aktivizācija notiek daudz zemāk uz ekrāna
     let combatMode = false;
     if (beasts.length > 0 && pepes.length > 0) {
-        // Atrodam abu pūļu vidējo Y pozīciju
         let avgPepeY = pepes.reduce((sum, p) => sum + p.y, 0) / pepes.length;
         let avgBeastY = beasts.reduce((sum, b) => sum + b.y, 0) / beasts.length;
         
-        // Ja pūļi ir satikušies (attālums pa Y asi ir mazs)
-        if (avgBeastY >= avgPepeY - 60) {
+        // Atļaujam MrBeast pūlim pietuvoties vēl tuvāk (līdz 35 pikseļu attālumam, pirms skriešana apstājas)
+        if (avgBeastY >= avgPepeY - 35) {
             combatMode = true; 
         }
     }
@@ -150,18 +148,16 @@ function update() {
         pepe.y += (targetY - pepe.y) * 0.12;
     });
 
-    // UZLABOJUMS: Skriešanas un uzbrukuma loģika
+    // Skriešanas un uzbrukuma loģika
     if (!combatMode) {
-        // Parastais režīms: Vārti un pretinieki slīd uz leju
         let speed = 2.5 + (currentLevel * 0.1);
         gates.forEach(gate => gate.y += speed);
         beasts.forEach(beast => beast.y += speed);
     } else {
-        // CĪŅAS REŽĪMS: Spēle vairs neslīd uz priekšu. Tā vietā MrBeast pūlis aktīvi 
-        // skrien virsū Pepe pūļa centram (uz spēlētāja X pozīciju). Sienas efekts ir pazudis!
+        // CĪŅAS REŽĪMS: Pretinieki aktīvi un ātri dodas tieši uz leju tavā pūlī
         beasts.forEach(beast => {
-            beast.x += (targetLeaderX - beast.x) * 0.05 + (Math.random() - 0.5) * 2;
-            beast.y += (500 - beast.y) * 0.05;
+            beast.x += (targetLeaderX - beast.x) * 0.07 + (Math.random() - 0.5) * 2;
+            beast.y += (500 - beast.y) * 0.07;
         });
     }
 
@@ -195,7 +191,7 @@ function update() {
         }
     });
 
-    // Cīņa ar MrBeast (Sadursmju apstrāde)
+    // Cīņa ar MrBeast
     for (let i = pepes.length - 1; i >= 0; i--) {
         for (let j = beasts.length - 1; j >= 0; j--) {
             let dist = Math.hypot(pepes[i].x - beasts[j].x, pepes[i].y - beasts[j].y);
