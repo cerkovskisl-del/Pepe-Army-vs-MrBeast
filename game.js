@@ -10,6 +10,16 @@ const overlayText = document.getElementById("overlay-text");
 let mouseX = canvas.width / 2;
 let gameState = "playing";
 
+// JAUNUMS: Līmeņu sistēma
+let currentLevel = 1;
+
+// Spēlētāji (Zilā Pepe komanda)
+let pepes = [];
+
+// Vārti un Pretinieki (tiks definēti caur funkciju)
+let gates = [];
+let beasts = [];
+
 // Sekojam peles vai skāriena kustībai
 canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -20,32 +30,39 @@ canvas.addEventListener("touchmove", (e) => {
     mouseX = e.touches[0].clientX - rect.left;
 });
 
-// Sākuma spēlētājs (Zilā Pepe komanda)
-let pepes = [{ x: 200, y: 500 }];
-
-// Vārti jeb portāli (viens x2, otrs x999)
-let gates = [
-    { x: 40, y: 300, w: 140, h: 45, value: 2, text: "x2", color: "#00ffcc", active: true },
-    { x: 220, y: 300, w: 140, h: 45, value: 999, text: "x999", color: "#ff00ff", active: true }
-];
-
-// Pretinieki (Sarkanā MrBeast komanda)
-let beasts = [];
-for (let i = 0; i < 40; i++) {
-    beasts.push({
-        x: 80 + Math.random() * 240,
-        y: 50 + Math.random() * 120
-    });
+// Funkcija, kas sagatavo līmeni
+function startLevel(level) {
+    gameState = "playing";
+    overlay.classList.add("hidden"); // Paslēpj izvēlni
+    
+    // Atiestata Pepe pūli uz 1 sākuma tēlu
+    pepes = [{ x: 200, y: 500 }];
+    
+    // Uzstāda vārtus (tie atgriežas augšā)
+    gates = [
+        { x: 40, y: 150, w: 140, h: 45, value: 2, text: "x2", color: "#00ffcc", active: true },
+        { x: 220, y: 150, w: 140, h: 45, value: 999, text: "x999", color: "#ff00ff", active: true }
+    ];
+    
+    // Pretinieku skaits pieaug ar katru līmeni (Pirmajā līmenī 30, otrajā 45, trešajā 60 utt.)
+    let beastAmount = 15 + level * 15; 
+    beasts = [];
+    for (let i = 0; i < beastAmount; i++) {
+        beasts.push({
+            x: 80 + Math.random() * 240,
+            y: -100 + Math.random() * 150 // Pretinieki sākumā ir "virs" ekrāna un slīd uz leju
+        });
+    }
 }
 
-// Spēles loģikas atjaunošana (Kustība, Sadursmes)
+// Spēles loģikas atjaunošana
 function update() {
     if (gameState !== "playing") return;
 
     // Ierobežojam galvenā Pepe vadītāja pozīciju rāmja robežās
     let targetLeaderX = Math.max(20, Math.min(canvas.width - 20, mouseX));
 
-    // Kustina pūli un izkārto tos blakus vienu otram ar nelielu nobīdi
+    // Kustina pūli un izkārto tos blakus vienu otram
     pepes.forEach((pepe, index) => {
         let row = Math.floor(index / 6);
         let col = index % 6 - 2.5;
@@ -56,8 +73,8 @@ function update() {
         pepe.y += (targetY - pepe.y) * 0.1;
     });
 
-    // Kustina vārtus un pretiniekus uz leju (ātrums)
-    let speed = 2.5;
+    // Kustina vārtus un pretiniekus uz leju
+    let speed = 2.5 + (currentLevel * 0.2); // Ar katru līmeni spēle kļūst nedaudz ātrāka!
     gates.forEach(gate => gate.y += speed);
     beasts.forEach(beast => beast.y += speed);
 
@@ -67,11 +84,10 @@ function update() {
             if (pepes[0].y < gate.y + gate.h && pepes[0].y > gate.y &&
                 pepes[0].x > gate.x && pepes[0].x < gate.x + gate.w) {
                 
-                gate.active = false; // Izslēdz vārtus, lai nereizinātos bezgalīgi
+                gate.active = false; 
                 let currentCount = pepes.length;
                 let newCount = (currentCount * gate.value) - currentCount;
 
-                // Ierobežojam maksimālo uzzīmēto tēlu skaitu līdz 300, lai spēle nenokārtos pie x999
                 let spawnLimit = Math.min(newCount, 300); 
 
                 for (let i = 0; i < spawnLimit; i++) {
@@ -100,23 +116,45 @@ function update() {
     pepeCountEl.innerText = pepes.length;
     beastCountEl.innerText = beasts.length;
 
-    // Pārbauda uzvaru vai zaudējumu
+    // Pārbauda zaudējumu
     if (pepes.length === 0) {
         gameState = "gameover";
-        overlayText.innerText = "Zaudēji! MrBeast uzvarēja.";
+        overlayText.innerText = "Zaudēji līmenī " + currentLevel + "!";
         overlayText.style.color = "#ff3b3b";
-        overlay.classList.remove("hidden"); // Parāda beigu ekrānu
-    } else if (beasts.length === 0) {
+        
+        // Pārtaisām pogu, lai tā pilnībā restartē spēli no 1. līmeņa
+        const btn = overlay.querySelector("button");
+        btn.innerText = "Sākt no jauna";
+        btn.onclick = () => { currentLevel = 1; startLevel(currentLevel); };
+        
+        overlay.classList.remove("hidden");
+    } 
+    // Pārbauda UZVARU (Pāreja uz nākamo bezgalīgo līmeni)
+    else if (beasts.length === 0 && gates[0].y > canvas.height) { 
         gameState = "win";
-        overlayText.innerText = "Uzvara! Pepe pieveica MrBeast!";
+        currentLevel++; // Palielina līmeņa numuru
+        
+        overlayText.innerText = "LĪMENIS " + (currentLevel - 1) + " PAVEIKTS!";
         overlayText.style.color = "#38b6ff";
-        overlay.classList.remove("hidden"); // Parāda beigu ekrānu
+        
+        // Pārtaisām pogu, lai tā ielādē nākamo līmeni
+        const btn = overlay.querySelector("button");
+        btn.innerText = "Nākamais līmenis (" + currentLevel + ")";
+        btn.onclick = () => { startLevel(currentLevel); };
+        
+        overlay.classList.remove("hidden");
     }
 }
 
 // Vizuālā zīmēšana uz ekrāna
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Parādām pašreizējo līmeni fonā
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.font = "bold 80px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("LVL " + currentLevel, canvas.width / 2, canvas.height / 2);
 
     // Zīmējam vārtus
     gates.forEach(gate => {
@@ -150,12 +188,13 @@ function draw() {
     });
 }
 
-// Bezgalīgais spēles cikls (Game Loop)
+// Bezgalīgais spēles cikls
 function gameLoop() {
     update();
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Palaižam spēli pirmo reizi
+// Palaižam pirmo līmeni
+startLevel(currentLevel);
 gameLoop();
