@@ -5,28 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pepe vs MrBeast Runner</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div id="language-selector" style="text-align: center; margin: 10px 0;">
-        <button onclick="changeLanguage('lv')" style="padding: 6px 12px; margin: 0 5px; cursor: pointer; font-weight: bold;">LV</button>
-        <button onclick="changeLanguage('en')" style="padding: 6px 12px; margin: 0 5px; cursor: pointer; font-weight: bold;">EN</button>
-        <button onclick="changeLanguage('ru')" style="padding: 6px 12px; margin: 0 5px; cursor: pointer; font-weight: bold;">RU</button>
-    </div>
-
-    <div id="ui-container">
-        <div id="info">Izmanto peli vai pirkstu, lai kustētos pa kreisi un pa labi.</div>
-        <div id="scoreboard">
-            <span id="pepe-label">Pepe skaits: <strong id="pepe-count">1</strong></span>
-            <span id="beast-label">MrBeast skaits: <strong id="beast-count">40</strong></span>
+    <div id="game-container">
+        <div id="language-selector">
+            <button id="lang-lv" class="lang-btn active" onclick="changeLanguage('lv')">LV</button>
+            <button id="lang-en" class="lang-btn" onclick="changeLanguage('en')">EN</button>
+            <button id="lang-ru" class="lang-btn" onclick="changeLanguage('ru')">RU</button>
         </div>
-    </div>
 
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="ui-container">
+            <div id="info">Izmanto peli vai pirkstu, lai kustētos pa kreisi un pa labi.</div>
+            <div id="scoreboard">
+                <span id="pepe-label">Pepe skaits: <strong id="pepe-count">1</strong></span>
+                <span id="beast-label">MrBeast skaits: <strong id="beast-count">40</strong></span>
+            </div>
+        </div>
 
-    <div id="overlay" class="hidden">
-        <h1 id="overlay-text">Zaudēji!</h1>
-        <div id="button-container"></div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+        <div id="overlay" class="hidden">
+            <div class="overlay-card">
+                <h1 id="overlay-text">Zaudēji!</h1>
+                <div id="button-container"></div>
+            </div>
+        </div>
     </div>
 
     <script src="game.js"></script>
