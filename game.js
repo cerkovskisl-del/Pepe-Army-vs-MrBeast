@@ -91,14 +91,25 @@ beastImg.src = 'mrbeas9.png';
 
 const characterSize = 26; // Nedaudz palielināti tēli labākai redzamībai
 
+// --- UZLABOTS: Responsīva vadības loģika telefoniem un datoriem ---
+function handleMove(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width; // Pārrēķina mērogu, ja canvas ir saspiests uz telefona ekrāna
+    mouseX = (clientX - rect.left) * scaleX;
+}
+
 canvas.addEventListener("mousemove", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.clientX - rect.left;
+    handleMove(e.clientX);
 });
+
+// Pievienoti skārienu klausītāji tūlītējai reakcijai uz telefona pirkstu vilkšanu
 canvas.addEventListener("touchmove", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mouseX = e.touches[0].clientX - rect.left;
-});
+    handleMove(e.touches[0].clientX);
+}, { passive: true });
+
+canvas.addEventListener("touchstart", (e) => {
+    handleMove(e.touches[0].clientX);
+}, { passive: true });
 
 window.addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "r") {
@@ -114,15 +125,24 @@ function startLevel(level) {
     localStorage.setItem("pepe_game_level", level);
     currentLevel = level;
     
-    pepes = [{ x: 200, y: 500, offsetX: 0, offsetY: 0 }];
+    // Pepe sākuma pozīcija centrēta pēc canvas platuma
+    pepes = [{ x: canvas.width / 2, y: 500, offsetX: 0, offsetY: 0 }];
     let beastAmount = 15 + level * 15; 
     
     gates = [];
     let gateLines = 1 + Math.floor(level / 2); 
     if (gateLines > 4) gateLines = 4; 
     
-    let gateWidth = 120; // Nedaudz platāki vārti
+    // --- RESPONSĪVU VĀRTU APRĒĶINS ---
+    // Katri vārti aizņem 35% no kopējā ekrāna platuma, lai tie smuki saietu kopā
+    let gateWidth = canvas.width * 0.35; 
     let gateHeight = 45;
+    
+    // Dinamiski aprēķinām atstarpes no malām, lai vārti nekad neizietu no canvas rāmja
+    let padding = canvas.width * 0.10; // 10% no ekrāna malas
+    let leftGateX = padding;
+    let rightGateX = canvas.width - padding - gateWidth;
+    
     let theoreticalPepeCount = 1; 
     
     for (let line = 0; line < gateLines; line++) {
@@ -174,13 +194,13 @@ function startLevel(level) {
             }
         }
         
-        // Atstarpes starp vārtiem un malu optimizācija
+        // Izvietojam vārtus izmantojot jaunos, responsīvos leftGateX un rightGateX mainīgos
         if (Math.random() > 0.5) {
-            gates.push({ x: 45, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
-            gates.push({ x: 235, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
+            gates.push({ x: leftGateX, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
+            gates.push({ x: rightGateX, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
         } else {
-            gates.push({ x: 45, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
-            gates.push({ x: 235, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
+            gates.push({ x: leftGateX, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
+            gates.push({ x: rightGateX, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
         }
     }
     
@@ -193,7 +213,7 @@ function startLevel(level) {
         let r = 9 * Math.sqrt(i); 
         
         beasts.push({
-            x: 200 + r * Math.cos(phi) + (Math.random() - 0.5) * 5,
+            x: canvas.width / 2 + r * Math.cos(phi) + (Math.random() - 0.5) * 5,
             y: bossZoneCenterY + r * Math.sin(phi) + (Math.random() - 0.5) * 5
         });
     }
@@ -230,8 +250,8 @@ function update() {
         let targetX = targetLeaderX + pepe.offsetX;
         let targetY = 500 + pepe.offsetY;
 
-        pepe.x += (targetX - pepe.x) * 0.12;
-        pepe.y += (targetY - pepe.y) * 0.12;
+        pepe.x += (targetX - pepe.x) * 0.15; // Nedaudz palielināta atsaucība plūstošākai vadībai uz telefona
+        pepe.y += (targetY - pepe.y) * 0.15;
     });
 
     let speed = 2.5 + (currentLevel * 0.1);
@@ -382,7 +402,7 @@ function draw() {
     // Fonā rādāmais milzīgais līmeņa uzraksts modernākā fontā
     const t = translations[currentLang];
     ctx.fillStyle = "rgba(255, 255, 255, 0.025)";
-    ctx.font = "black 75px 'Orbitron', sans-serif";
+    ctx.font = "black 55px 'Orbitron', sans-serif"; // Nedaudz mazāks fonts, lai ideāli izskatītos uz mobilajiem ekrāniem
     ctx.textAlign = "center";
     ctx.fillText(t.level + " " + currentLevel, canvas.width / 2, canvas.height / 2 + 20);
 
@@ -404,9 +424,9 @@ function draw() {
             ctx.shadowBlur = 0;
             
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 22px 'Orbitron', sans-serif";
+            ctx.font = "bold 20px 'Orbitron', sans-serif"; // Optimizēts teksta izmērs vārtos
             ctx.textAlign = "center";
-            ctx.fillText(gate.text, gate.x + gate.w / 2, gate.y + 31);
+            ctx.fillText(gate.text, gate.x + gate.w / 2, gate.y + 29);
         }
     });
 
