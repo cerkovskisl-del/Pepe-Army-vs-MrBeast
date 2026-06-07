@@ -8,22 +8,23 @@ const overlayText = document.getElementById("overlay-text");
 
 let mouseX = canvas.width / 2;
 let gameState = "playing";
-let currentLevel = 1;
+
+// Ielādējam iepriekš saglabāto līmeni no atmiņas
+let currentLevel = parseInt(localStorage.getItem("pepe_game_level")) || 1;
 
 let pepes = [];
 let gates = [];
 let beasts = [];
 
-// --- ATJAUNINĀTI ATTĒLU NOSAUKUMI ---
 const pepeImg = new Image();
-pepeImg.src = 'pepe9.png'; // Izmanto pepe9.png
+pepeImg.src = 'pepe9.png'; 
 
 const beastImg = new Image();
-beastImg.src = 'mrbeas9.png'; // Izmanto mrbeas9.png
+beastImg.src = 'mrbeas9.png'; 
 
-// Tēlu izmērs ekrānā pikseļos
 const characterSize = 24; 
 
+// Sekojam peles/skāriena kustībai
 canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
@@ -33,9 +34,20 @@ canvas.addEventListener("touchmove", (e) => {
     mouseX = e.touches[0].clientX - rect.left;
 });
 
+// --- JAUNUMS: Piespiežot taustiņu "R", līmenis pārstartējas jebkurā brīdī ---
+window.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "r") {
+        startLevel(currentLevel);
+    }
+});
+
 function startLevel(level) {
     gameState = "playing";
     overlay.classList.add("hidden");
+    
+    // Saglabājam līmeni pārlūka atmiņā
+    localStorage.setItem("pepe_game_level", level);
+    currentLevel = level;
     
     pepes = [{ x: 200, y: 500, offsetX: 0, offsetY: 0 }];
     let beastAmount = 15 + level * 15; 
@@ -208,25 +220,59 @@ function update() {
     pepeCountEl.innerText = pepes.length;
     beastCountEl.innerText = beasts.length;
 
+    // ZAUDĒJUMA LOGS
     if (pepes.length === 0) {
         gameState = "gameover";
         overlayText.innerText = "Zaudēji līmenī " + currentLevel + "!";
         overlayText.style.color = "#ff3b3b";
         
-        const btn = overlay.querySelector("button");
-        btn.innerText = "Sākt no jauna";
-        btn.onclick = () => { currentLevel = 1; startLevel(currentLevel); };
-        overlay.classList.remove("hidden");
-    } else if (beasts.length === 0) { 
-        gameState = "win";
-        currentLevel++;
+        const btnContainer = overlay.querySelector("div") || overlay;
+        const existingButtons = overlay.querySelectorAll("button");
+        existingButtons.forEach(b => b.remove());
         
-        overlayText.innerText = "LĪMENIS " + (currentLevel - 1) + " PAVEIKTS!";
+        const retryBtn = document.createElement("button");
+        retryBtn.innerText = "Mēģināt vēlreiz";
+        retryBtn.style.margin = "10px";
+        retryBtn.onclick = () => { startLevel(currentLevel); };
+        
+        const resetBtn = document.createElement("button");
+        resetBtn.innerText = "Sākt no 1. līmeņa";
+        resetBtn.style.margin = "10px";
+        resetBtn.style.backgroundColor = "#555";
+        resetBtn.onclick = () => { startLevel(1); };
+        
+        btnContainer.appendChild(retryBtn);
+        btnContainer.appendChild(resetBtn);
+        overlay.classList.remove("hidden");
+    } 
+    // UZVARAS LOGS (Papildināts ar iespēju spēlēt līmeni vēlreiz)
+    else if (beasts.length === 0) { 
+        gameState = "win";
+        let nextLevel = currentLevel + 1;
+        
+        overlayText.innerText = "LĪMENIS " + currentLevel + " PAVEIKTS!";
         overlayText.style.color = "#38b6ff";
         
-        const btn = overlay.querySelector("button");
-        btn.innerText = "Nākamais līmenis (" + currentLevel + ")";
-        btn.onclick = () => { startLevel(currentLevel); };
+        const btnContainer = overlay.querySelector("div") || overlay;
+        const existingButtons = overlay.querySelectorAll("button");
+        existingButtons.forEach(b => b.remove());
+        
+        // Poga 1: Iet uz nākamo līmeni
+        const nextBtn = document.createElement("button");
+        nextBtn.innerText = "Nākamais līmenis (" + nextLevel + ")";
+        nextBtn.style.margin = "10px";
+        nextBtn.onclick = () => { startLevel(nextLevel); };
+        
+        // --- JAUNUMS --- Poga 2: Iziet šo pašu līmeni vēlreiz
+        const replayBtn = document.createElement("button");
+        replayBtn.innerText = "Spēlēt vēlreiz (Lvl " + currentLevel + ")";
+        replayBtn.style.margin = "10px";
+        replayBtn.style.backgroundColor = "#4caf50"; // Zaļā krāsā
+        replayBtn.onclick = () => { startLevel(currentLevel); };
+        
+        btnContainer.appendChild(nextBtn);
+        btnContainer.appendChild(replayBtn);
+        
         overlay.classList.remove("hidden");
     }
 }
@@ -252,23 +298,11 @@ function draw() {
     });
 
     beasts.forEach(beast => {
-        ctx.drawImage(
-            beastImg, 
-            beast.x - characterSize / 2, 
-            beast.y - characterSize / 2, 
-            characterSize, 
-            characterSize
-        );
+        ctx.drawImage(beastImg, beast.x - characterSize / 2, beast.y - characterSize / 2, characterSize, characterSize);
     });
 
     pepes.forEach(pepe => {
-        ctx.drawImage(
-            pepeImg, 
-            pepe.x - characterSize / 2, 
-            pepe.y - characterSize / 2, 
-            characterSize, 
-            characterSize
-        );
+        ctx.drawImage(pepeImg, pepe.x - characterSize / 2, pepe.y - characterSize / 2, characterSize, characterSize);
     });
 }
 
