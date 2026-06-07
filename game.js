@@ -6,11 +6,77 @@ const beastCountEl = document.getElementById("beast-count");
 const overlay = document.getElementById("overlay");
 const overlayText = document.getElementById("overlay-text");
 
+// Jaunie elementi UI tulkošanai
+const infoEl = document.getElementById("info");
+const pepeLabelEl = document.getElementById("pepe-label");
+const beastLabelEl = document.getElementById("beast-label");
+const buttonContainer = document.getElementById("button-container");
+
 let mouseX = canvas.width / 2;
 let gameState = "playing";
 
-// Ielādējam iepriekš saglabāto līmeni no atmiņas
+// Ielādējam iepriekš saglabāto līmeni un valodu no atmiņas
 let currentLevel = parseInt(localStorage.getItem("pepe_game_level")) || 1;
+let currentLang = localStorage.getItem("pepe_game_lang") || "lv";
+
+// Visu tekstu vārdnīca trim valodām
+const translations = {
+    lv: {
+        instruction: "Izmanto peli vai pirkstu, lai kustētos pa kreisi un pa labi.",
+        pepeCount: "Pepe skaits: ",
+        beastCount: "MrBeast skaits: ",
+        level: "LĪMENIS",
+        lost: "Zaudēji līmenī ",
+        won: " PAVEIKTS!",
+        retry: "Mēģināt vēlreiz",
+        startFrom1: "Sākt no 1. līmeņa",
+        nextLevel: "Nākamais līmenis",
+        playAgain: "Spēlēt vēlreiz"
+    },
+    en: {
+        instruction: "Use mouse or finger to move left and right.",
+        pepeCount: "Pepe count: ",
+        beastCount: "MrBeast count: ",
+        level: "LEVEL",
+        lost: "You lost at level ",
+        won: " COMPLETED!",
+        retry: "Try Again",
+        startFrom1: "Start from Level 1",
+        nextLevel: "Next Level",
+        playAgain: "Play Again"
+    },
+    ru: {
+        instruction: "Используйте мышь или палец для перемещения влево и вправо.",
+        pepeCount: "Кол-во Pepe: ",
+        beastCount: "Кол-во MrBeast: ",
+        level: "УРОВЕНЬ",
+        lost: "Вы проиграли на уровне ",
+        won: " ПРОЙДЕН!",
+        retry: "Попробовать еще раз",
+        startFrom1: "Начать с 1 уровня",
+        nextLevel: "Следующий уровень",
+        playAgain: "Играть снова"
+    }
+};
+
+// Funkcija, kas pārtulko pastāvīgos UI elementus ekrāna augšpusē
+function updateStaticUI() {
+    const t = translations[currentLang];
+    infoEl.childNodes[0].textContent = t.instruction;
+    
+    // Saglabājam skaitītāju biezos ciparus (strong tēgus) un mainām tikai tekstu pirms tiem
+    pepeLabelEl.innerHTML = t.pepeCount + `<strong id="pepe-count">${pepes.length}</strong>`;
+    beastLabelEl.innerHTML = t.beastCount + `<strong id="beast-count">${beasts.length}</strong>`;
+}
+
+window.changeLanguage = function(lang) {
+    currentLang = lang;
+    localStorage.setItem("pepe_game_lang", lang);
+    updateStaticUI();
+    if (gameState === "gameover" || gameState === "win") {
+        showEndScreen();
+    }
+};
 
 let pepes = [];
 let gates = [];
@@ -24,7 +90,6 @@ beastImg.src = 'mrbeas9.png';
 
 const characterSize = 24; 
 
-// Sekojam peles/skāriena kustībai
 canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
@@ -34,7 +99,6 @@ canvas.addEventListener("touchmove", (e) => {
     mouseX = e.touches[0].clientX - rect.left;
 });
 
-// --- JAUNUMS: Piespiežot taustiņu "R", līmenis pārstartējas jebkurā brīdī ---
 window.addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "r") {
         startLevel(currentLevel);
@@ -44,8 +108,8 @@ window.addEventListener("keydown", (e) => {
 function startLevel(level) {
     gameState = "playing";
     overlay.classList.add("hidden");
+    buttonContainer.innerHTML = ""; // Iztīrām pogas
     
-    // Saglabājam līmeni pārlūka atmiņā
     localStorage.setItem("pepe_game_level", level);
     currentLevel = level;
     
@@ -131,6 +195,8 @@ function startLevel(level) {
             y: bossZoneCenterY + r * Math.sin(phi) + (Math.random() - 0.5) * 5
         });
     }
+
+    updateStaticUI();
 }
 
 function update() {
@@ -217,73 +283,74 @@ function update() {
         }
     }
 
-    pepeCountEl.innerText = pepes.length;
-    beastCountEl.innerText = beasts.length;
+    // Atjaunojam ciparus dzīvajā UI augšā
+    const countPepeEl = document.getElementById("pepe-count");
+    const countBeastEl = document.getElementById("beast-count");
+    if(countPepeEl) countPepeEl.innerText = pepes.length;
+    if(countBeastEl) countBeastEl.innerText = beasts.length;
 
-    // ZAUDĒJUMA LOGS
     if (pepes.length === 0) {
         gameState = "gameover";
-        overlayText.innerText = "Zaudēji līmenī " + currentLevel + "!";
+        showEndScreen();
+    } else if (beasts.length === 0) { 
+        gameState = "win";
+        showEndScreen();
+    }
+}
+
+function showEndScreen() {
+    const t = translations[currentLang];
+    buttonContainer.innerHTML = ""; // Iztīrām iepriekšējās pogas
+    
+    if (gameState === "gameover") {
+        overlayText.innerText = t.lost + currentLevel + "!";
         overlayText.style.color = "#ff3b3b";
         
-        const btnContainer = overlay.querySelector("div") || overlay;
-        const existingButtons = overlay.querySelectorAll("button");
-        existingButtons.forEach(b => b.remove());
-        
         const retryBtn = document.createElement("button");
-        retryBtn.innerText = "Mēģināt vēlreiz";
+        retryBtn.innerText = t.retry;
         retryBtn.style.margin = "10px";
         retryBtn.onclick = () => { startLevel(currentLevel); };
         
         const resetBtn = document.createElement("button");
-        resetBtn.innerText = "Sākt no 1. līmeņa";
+        resetBtn.innerText = t.startFrom1;
         resetBtn.style.margin = "10px";
         resetBtn.style.backgroundColor = "#555";
         resetBtn.onclick = () => { startLevel(1); };
         
-        btnContainer.appendChild(retryBtn);
-        btnContainer.appendChild(resetBtn);
-        overlay.classList.remove("hidden");
+        buttonContainer.appendChild(retryBtn);
+        buttonContainer.appendChild(resetBtn);
     } 
-    // UZVARAS LOGS (Papildināts ar iespēju spēlēt līmeni vēlreiz)
-    else if (beasts.length === 0) { 
-        gameState = "win";
+    else if (gameState === "win") {
         let nextLevel = currentLevel + 1;
-        
-        overlayText.innerText = "LĪMENIS " + currentLevel + " PAVEIKTS!";
+        overlayText.innerText = t.level + " " + currentLevel + t.won;
         overlayText.style.color = "#38b6ff";
         
-        const btnContainer = overlay.querySelector("div") || overlay;
-        const existingButtons = overlay.querySelectorAll("button");
-        existingButtons.forEach(b => b.remove());
-        
-        // Poga 1: Iet uz nākamo līmeni
         const nextBtn = document.createElement("button");
-        nextBtn.innerText = "Nākamais līmenis (" + nextLevel + ")";
+        nextBtn.innerText = t.nextLevel + " (" + nextLevel + ")";
         nextBtn.style.margin = "10px";
         nextBtn.onclick = () => { startLevel(nextLevel); };
         
-        // --- JAUNUMS --- Poga 2: Iziet šo pašu līmeni vēlreiz
         const replayBtn = document.createElement("button");
-        replayBtn.innerText = "Spēlēt vēlreiz (Lvl " + currentLevel + ")";
+        replayBtn.innerText = t.playAgain + " (" + currentLevel + ")";
         replayBtn.style.margin = "10px";
-        replayBtn.style.backgroundColor = "#4caf50"; // Zaļā krāsā
+        replayBtn.style.backgroundColor = "#4caf50"; 
         replayBtn.onclick = () => { startLevel(currentLevel); };
         
-        btnContainer.appendChild(nextBtn);
-        btnContainer.appendChild(replayBtn);
-        
-        overlay.classList.remove("hidden");
+        buttonContainer.appendChild(nextBtn);
+        buttonContainer.appendChild(replayBtn);
     }
+    
+    overlay.classList.remove("hidden");
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const t = translations[currentLang];
     ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-    ctx.font = "bold 80px Arial";
+    ctx.font = "bold 60px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("LVL " + currentLevel, canvas.width / 2, canvas.height / 2);
+    ctx.fillText(t.level + " " + currentLevel, canvas.width / 2, canvas.height / 2);
 
     gates.forEach(gate => {
         if (gate.active) {
