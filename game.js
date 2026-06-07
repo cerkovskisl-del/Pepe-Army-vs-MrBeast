@@ -1,12 +1,10 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const pepeCountEl = document.getElementById("pepe-count");
-const beastCountEl = document.getElementById("beast-count");
 const overlay = document.getElementById("overlay");
 const overlayText = document.getElementById("overlay-text");
 
-// Jaunie elementi UI tulkošanai
+// UI tulkošanai
 const infoEl = document.getElementById("info");
 const pepeLabelEl = document.getElementById("pepe-label");
 const beastLabelEl = document.getElementById("beast-label");
@@ -15,11 +13,12 @@ const buttonContainer = document.getElementById("button-container");
 let mouseX = canvas.width / 2;
 let gameState = "playing";
 
-// Ielādējam iepriekš saglabāto līmeni un valodu no atmiņas
+// Fona kustības mainīgais (ātruma simulācijai)
+let backgroundOffsetY = 0;
+
 let currentLevel = parseInt(localStorage.getItem("pepe_game_level")) || 1;
 let currentLang = localStorage.getItem("pepe_game_lang") || "lv";
 
-// Visu tekstu vārdnīca trim valodām
 const translations = {
     lv: {
         instruction: "Izmanto peli vai pirkstu, lai kustētos pa kreisi un pa labi.",
@@ -59,14 +58,16 @@ const translations = {
     }
 };
 
-// Funkcija, kas pārtulko pastāvīgos UI elementus ekrāna augšpusē
 function updateStaticUI() {
     const t = translations[currentLang];
     infoEl.childNodes[0].textContent = t.instruction;
-    
-    // Saglabājam skaitītāju biezos ciparus (strong tēgus) un mainām tikai tekstu pirms tiem
     pepeLabelEl.innerHTML = t.pepeCount + `<strong id="pepe-count">${pepes.length}</strong>`;
     beastLabelEl.innerHTML = t.beastCount + `<strong id="beast-count">${beasts.length}</strong>`;
+    
+    // Vizualizējam, kura valodas poga šobrīd ir aktīva CSS stilā
+    document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.remove("active"));
+    const activeBtn = document.getElementById("lang-" + currentLang);
+    if(activeBtn) activeBtn.classList.add("active");
 }
 
 window.changeLanguage = function(lang) {
@@ -88,7 +89,7 @@ pepeImg.src = 'pepe9.png';
 const beastImg = new Image();
 beastImg.src = 'mrbeas9.png'; 
 
-const characterSize = 24; 
+const characterSize = 26; // Nedaudz palielināti tēli labākai redzamībai
 
 canvas.addEventListener("mousemove", (e) => {
     const rect = canvas.getBoundingClientRect();
@@ -108,7 +109,7 @@ window.addEventListener("keydown", (e) => {
 function startLevel(level) {
     gameState = "playing";
     overlay.classList.add("hidden");
-    buttonContainer.innerHTML = ""; // Iztīrām pogas
+    buttonContainer.innerHTML = ""; 
     
     localStorage.setItem("pepe_game_level", level);
     currentLevel = level;
@@ -120,8 +121,8 @@ function startLevel(level) {
     let gateLines = 1 + Math.floor(level / 2); 
     if (gateLines > 4) gateLines = 4; 
     
-    let gateWidth = 110;
-    let gateHeight = 40;
+    let gateWidth = 120; // Nedaudz platāki vārti
+    let gateHeight = 45;
     let theoreticalPepeCount = 1; 
     
     for (let line = 0; line < gateLines; line++) {
@@ -131,7 +132,7 @@ function startLevel(level) {
         
         if (line === gateLines - 1) {
             valLeft = 2;
-            textLeft = "x2";
+            textLeft = "×2";
             typeLeft = "mult";
             colorLeft = "#00ffcc";
             
@@ -139,15 +140,15 @@ function startLevel(level) {
             if (neededMultiplier < 2) neededMultiplier = 2; 
             
             valRight = neededMultiplier;
-            textRight = "x" + valRight;
+            textRight = "×" + valRight;
             typeRight = "mult";
-            colorRight = "#ff00ff";
+            colorRight = "#ff00ff"; // Violetie uzvaras vārti
             theoreticalPepeCount *= valRight;
         } else {
             let randLeft = Math.random();
             if (randLeft < 0.5) {
                 valLeft = 2 + Math.floor(Math.random() * 2);
-                textLeft = "x" + valLeft;
+                textLeft = "×" + valLeft;
                 typeLeft = "mult";
                 colorLeft = "#00ffcc";
                 theoreticalPepeCount *= valLeft;
@@ -162,23 +163,24 @@ function startLevel(level) {
             let randRight = Math.random();
             if (randRight < 0.5) {
                 valRight = 2 + Math.floor(Math.random() * 5);
-                textRight = "-" + valRight;
+                textRight = "−" + valRight;
                 typeRight = "sub";
                 colorRight = "#ff3b3b";
             } else {
                 valRight = 2;
-                textRight = "/2";
+                textRight = "÷" + valRight;
                 typeRight = "div";
                 colorRight = "#ff9900";
             }
         }
         
+        // Atstarpes starp vārtiem un malu optimizācija
         if (Math.random() > 0.5) {
-            gates.push({ x: 50, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
-            gates.push({ x: 240, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
+            gates.push({ x: 45, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
+            gates.push({ x: 235, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
         } else {
-            gates.push({ x: 50, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
-            gates.push({ x: 240, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
+            gates.push({ x: 45, y: gateY, w: gateWidth, h: gateHeight, type: typeRight, value: valRight, text: textRight, color: colorRight, active: true });
+            gates.push({ x: 235, y: gateY, w: gateWidth, h: gateHeight, type: typeLeft, value: valLeft, text: textLeft, color: colorLeft, active: true });
         }
     }
     
@@ -232,8 +234,11 @@ function update() {
         pepe.y += (targetY - pepe.y) * 0.12;
     });
 
+    let speed = 2.5 + (currentLevel * 0.1);
     if (!combatMode) {
-        let speed = 2.5 + (currentLevel * 0.1);
+        // Fonu ritmiskā kustība uz leju
+        backgroundOffsetY = (backgroundOffsetY + speed) % 40;
+        
         gates.forEach(gate => gate.y += speed);
         beasts.forEach(beast => beast.y += speed);
     } else {
@@ -283,7 +288,6 @@ function update() {
         }
     }
 
-    // Atjaunojam ciparus dzīvajā UI augšā
     const countPepeEl = document.getElementById("pepe-count");
     const countBeastEl = document.getElementById("beast-count");
     if(countPepeEl) countPepeEl.innerText = pepes.length;
@@ -300,21 +304,20 @@ function update() {
 
 function showEndScreen() {
     const t = translations[currentLang];
-    buttonContainer.innerHTML = ""; // Iztīrām iepriekšējās pogas
+    buttonContainer.innerHTML = ""; 
     
     if (gameState === "gameover") {
         overlayText.innerText = t.lost + currentLevel + "!";
         overlayText.style.color = "#ff3b3b";
+        overlayText.style.textShadow = "0 0 15px rgba(255, 59, 59, 0.6)";
         
         const retryBtn = document.createElement("button");
         retryBtn.innerText = t.retry;
-        retryBtn.style.margin = "10px";
         retryBtn.onclick = () => { startLevel(currentLevel); };
         
         const resetBtn = document.createElement("button");
         resetBtn.innerText = t.startFrom1;
-        resetBtn.style.margin = "10px";
-        resetBtn.style.backgroundColor = "#555";
+        resetBtn.style.background = "linear-gradient(90deg, #24243e 0%, #302b63 100%)";
         resetBtn.onclick = () => { startLevel(1); };
         
         buttonContainer.appendChild(retryBtn);
@@ -323,17 +326,16 @@ function showEndScreen() {
     else if (gameState === "win") {
         let nextLevel = currentLevel + 1;
         overlayText.innerText = t.level + " " + currentLevel + t.won;
-        overlayText.style.color = "#38b6ff";
+        overlayText.style.color = "#00f3ff";
+        overlayText.style.textShadow = "0 0 15px rgba(0, 243, 255, 0.6)";
         
         const nextBtn = document.createElement("button");
         nextBtn.innerText = t.nextLevel + " (" + nextLevel + ")";
-        nextBtn.style.margin = "10px";
         nextBtn.onclick = () => { startLevel(nextLevel); };
         
         const replayBtn = document.createElement("button");
         replayBtn.innerText = t.playAgain + " (" + currentLevel + ")";
-        replayBtn.style.margin = "10px";
-        replayBtn.style.backgroundColor = "#4caf50"; 
+        replayBtn.style.background = "linear-gradient(90deg, #11998e 0%, #38ef7d 100%)"; // Skaists zaļš gradients
         replayBtn.onclick = () => { startLevel(currentLevel); };
         
         buttonContainer.appendChild(nextBtn);
@@ -343,31 +345,77 @@ function showEndScreen() {
     overlay.classList.remove("hidden");
 }
 
+// Funkcija, kas uzzīmē noapaļotus stūrus vārtiem
+function drawRoundRect(x, y, w, h, radius, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
+    ctx.closePath();
+    ctx.fill();
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const t = translations[currentLang];
-    ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-    ctx.font = "bold 60px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(t.level + " " + currentLevel, canvas.width / 2, canvas.height / 2);
+    // --- JAUNUMS: Futūristisks neona kustīgais tīkls (Grid background) ---
+    ctx.strokeStyle = "rgba(0, 243, 255, 0.04)";
+    ctx.lineWidth = 1;
+    // Vertikālās līnijas
+    for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+    // Horizontālās kustīgās līnijas
+    for (let y = backgroundOffsetY; y < canvas.height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
 
+    // Fonā rādāmais milzīgais līmeņa uzraksts modernākā fontā
+    const t = translations[currentLang];
+    ctx.fillStyle = "rgba(255, 255, 255, 0.025)";
+    ctx.font = "black 75px 'Orbitron', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(t.level + " " + currentLevel, canvas.width / 2, canvas.height / 2 + 20);
+
+    // Vārtu zīmēšana ar spīduma efektu un noapaļotiem stūriem
     gates.forEach(gate => {
         if (gate.active) {
-            ctx.fillStyle = gate.color;
-            ctx.fillRect(gate.x, gate.y, gate.w, gate.h);
+            // Pievienojam neona spīduma efektu caur canvas kontekstu
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = gate.color;
             
-            ctx.fillStyle = "#000000";
-            ctx.font = "bold 20px Arial";
+            // Paši vārti ar puscaurspīdīgu fonu un spilgtu apmali
+            drawRoundRect(gate.x, gate.y, gate.w, gate.h, 10, gate.color + "33"); // 33 apzīmē caurspīdību
+            
+            ctx.strokeStyle = gate.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Noņemam ēnu pirms teksta zīmēšanas, lai teksts neizplūst
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 22px 'Orbitron', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(gate.text, gate.x + gate.w / 2, gate.y + 28);
+            ctx.fillText(gate.text, gate.x + gate.w / 2, gate.y + 31);
         }
     });
 
+    // Zīmējam MrBeast armiju
     beasts.forEach(beast => {
         ctx.drawImage(beastImg, beast.x - characterSize / 2, beast.y - characterSize / 2, characterSize, characterSize);
     });
 
+    // Zīmējam Pepe armiju
     pepes.forEach(pepe => {
         ctx.drawImage(pepeImg, pepe.x - characterSize / 2, pepe.y - characterSize / 2, characterSize, characterSize);
     });
